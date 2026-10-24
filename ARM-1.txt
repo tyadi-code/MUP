@@ -1,0 +1,126 @@
+1.
+AREA Program, CODE, READONLY
+ENTRY
+MOV R0,#11
+Stop
+B Stop
+END
+//The number 11 is moved into register R0, and an infinite loop is entered to
+//terminate execution.
+
+2.
+AREA Program, CODE, READONLY
+ENTRY
+MOV R0,#0x12345678
+Stop
+B Stop
+END
+//The assembler gives an error that 0x12345678 cannot be represented by 0-255
+//and rotation. Every instruction must be 32 bits long, out of which only 12 bits are
+//for constants. 
+
+3.
+AREA Program, CODE, READONLY
+ENTRY
+LDR R1, =NUM1
+LDR R0, [R1]
+Stop
+B Stop
+NUM1 DCD &12345678
+END
+//First R1 is given the address of NUM1. The next line reads the value stored at
+//the address in R1, and puts it in R0.
+
+4.
+AREA Reset, CODE, READONLY
+ENTRY
+LDR R0, NUM1
+LDR R1, NUM2
+ADDS R2, R0, R1
+NUM1 DCD &12A2E640
+NUM2 DCD &335235EF
+Stop
+B Stop
+END
+//R0 is given the value of NUM1, R1 is given the value of NUM2.
+//R0 and R1 are added and the sum is stored in R2.
+
+5.
+AREA Reset, CODE, READONLY
+ENTRY
+LDR R0, NUM1a
+LDR R1, NUM1b
+LDR R2, NUM2a
+LDR R3, NUM2b
+ADDS R4, R0, R2
+ADC R5, R1, R3
+SWI &11
+NUM1a DCD &12A2E640
+NUM1b DCD &335235EF
+NUM2a DCD &1562E640
+NUM2b DCD &5D3A103F
+END
+//R0 and R1 are given the lower and upper 32 bits of the first number.
+//R2 and R3 are given the lower and upper 32 bits of the second number.
+//R0 and R2 are added and stored in R4 (carry flag is raised accordingly)
+//R1 and R3 are added with the carry from previous addition and stored in R5.
+//The final sum is stored in R5,R4.
+
+6.
+AREA Reset, CODE, READONLY
+ ENTRY
+ MOV R0, #0
+ MOV R1, #1
+ MOV R2, #8
+ MOV R5, #0
+
+loop
+ MOV R3, R1
+ ADD R1,R1,R0
+ MOV R0, R3
+ SUB R2,R2, #1
+ CMP R2,R5
+
+ BNE loop
+SWI &11
+END
+//The fibonacci numbers 
+
+7.
+AREA Myprog, CODE, READONLY
+ ENTRY
+ ADR R1, Buffer
+LDR R0, [R1, #4]
+stop
+B stop
+Buffer DCD &12A2E640 ,&F2100123, &001019BF ,&40023F51
+ END
+//R1 gets the value of the address of the line in the program which says Buffer.
+//After that, R0 gets the value stored in ‘the address stored in R1’ +4 (as #4 is
+//used, it would have added 8 if #8 was used), the value stored in R1 is not
+//changed. 
+
+8.
+AREA Prog1, CODE, READONLY
+ ENTRY
+ ADR R0 , Value1
+ LDMIA R0 , {R1,R2 }
+ ADR R3 , Value2
+ LDMIA R3 , {R4,R5 }
+stop
+ B stop
+Value1 DCD &12A2E640 ,&F2100123
+Value2 DCD &001019BF ,&40023F51
+ END 
+//R0 gets the value of the address of the line in the program which says Value1.
+//Leading to us seeing 0x00000014 in R0. In the next line, LDMIA R0 , {R1,R2 } , it
+//puts the value at the address at R0 in R1, then increments the value of address
+//copied from R0 into the internal address pointer, and stores the value stored in
+//this new address in R2. Leading to us seeing 0x12A2E640 in R1 and 0xF2100123
+//in R2.
+//After that, R3 gets the value of the address of the line in the program which
+//says Value1. Leading to us seeing 0x0000001C in R3. In the next line, LDMIA R3
+//, {R4,R5 } , it puts the value at the address at R3 in R4, then increments the
+//value of address copied from R3 into the internal address pointer, and stores
+//the value stored in this new address in R5. Leading to us seeing 0x001019BF in
+//R4 and 0x40023F51 in R5. This justifies the contents of the registers
