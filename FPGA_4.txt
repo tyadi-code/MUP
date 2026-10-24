@@ -1,0 +1,177 @@
+3. Perceptron for OR gate:
+
+Code:
+
+Header.h
+
+#ifndef OR_GATE_H
+#define OR_GATE_H
+#include <ap_int.h>
+#include <ap_fixed.h>
+typedef ap_fixed<8,4> data_t;
+void or_gate(ap_uint<1> a,ap_uint<1> b, ap_uint<1> &c);
+#endif
+
+
+perceptron.cpp
+
+#include "header.h"
+void or_gate(ap_uint<1> a,ap_uint<1> b, ap_uint<1> &c)
+{
+    #pragma HLS INTERFACE ap_ctrl_none port=return
+    #pragma HLS INTERFACE ap_none port=a
+    #pragma HLS INTERFACE ap_none port=b
+    #pragma HLS INTERFACE ap_none port=c
+    const data_t w1=1.0;
+    const data_t w2=1.0;
+    const data_t bias= -0.5;
+    data_t z = a*w1+b*w2+bias;
+    if(z>=0)
+    {
+        c=1;
+    }
+    else
+    {
+        c=0;
+    }
+}
+
+
+Testbench.cpp
+
+#include <iostream>
+#include "header.h"
+int main()
+{
+    ap_uint<1> a,b,c;
+    int status = 0;
+    std::cout<<"Testing OR perceptron \n";
+    for(int i=0; i<4;i++)
+    {
+        a=(i>>1) & 1; b=i&1;
+        or_gate(a,b,c);
+        ap_uint<1> expected = a | b;
+        std::cout<<"a=" <<a<< "b="<<b<< "c="<<c<<"\n";
+        if(c!= expected) status = 1;
+        if(status==0)
+        std::cout <<"Passed \n";
+    }
+    return status;
+}
+
+
+3. Perceptron for NAND gate:
+
+Code:
+
+Headernand.h
+
+#ifndef NAND_GATE_H
+#define NAND_GATE_H
+#include <ap_int.h>
+#include <ap_fixed.h>
+typedef ap_fixed<8,4> data_t;
+void nand_gate(ap_uint<1> a,ap_uint<1> b, ap_uint<1> k,ap_uint<1> l,data_t
+&m, ap_uint<1> &c);
+#endif
+
+
+Perceptronand.cpp
+
+#include "headernand.h"
+ap_uint<1> eval(data_t w1, data_t w2 , data_t bias,ap_uint<1> a,ap_uint<1>
+b)
+{
+    int c=0;
+    data_t z = a*w1+b*w2+bias;
+    if(z>=0)
+    {
+        c=1;
+    }
+    else
+    {
+        c=0;
+    }
+    return c;
+}
+void nand_gate(ap_uint<1> a,ap_uint<1> b, ap_uint<1> k,ap_uint<1> l,data_t
+&m, ap_uint<1> &c)
+{
+    #pragma HLS INTERFACE ap_ctrl_hs port=return
+    #pragma HLS INTERFACE ap_none port=a
+    #pragma HLS INTERFACE ap_none port=b
+    #pragma HLS INTERFACE ap_none port=c
+    data_t w1=-1.0;
+    data_t w2=-1.0;
+    data_t bias=1.5;
+    ap_uint<1> data[4][3] = {
+    {0, 0, 1},
+    {0, 1, 1},
+    {1, 0, 1},
+    {1, 1, 0}
+    };
+    data_t lr = 0.125;
+    for(int epoch = 0; epoch<20; epoch++)
+    {
+        for(int i = 0;i<4;i++)
+        {
+            ap_uint<1> pred = eval(w1, w2, bias, data[i][0], data[i][1]);
+            ap_int<2> error = (ap_int<2>)data[i][2] - (ap_int<2>)pred;
+            if(error!=0)
+            {
+                w1 += lr * error * data[i][0];
+                w2 += lr * error * data[i][1];
+                bias += lr * error;
+            }
+        }
+    }
+    c=eval(w1,w2,bias,a,b);
+    if(k==0 & l==0)
+    {
+        m=0;
+    }
+    else if(k==0 & l==1)
+    {
+        m=w1;
+    }
+    else if(k==1 & l==0)
+    {
+        m=w2;
+    }
+    else if(k==1 & l==1)
+    {
+        m=bias;
+    }
+    else
+    {
+        m=0;
+    }
+}
+Testbench.cpp
+#include <iostream>
+#include "headernand.h"
+int main() {
+    ap_uint<1> a, b, c, k, l;
+    int status = 0;
+    data_t m;
+    k=0;
+    l=0;
+    std::cout << "Testing NAND perceptron \n";
+    for (int i = 0; i < 4; i++) {
+        a = (i >> 1) & 1;
+        b = i & 1;
+        nand_gate(a, b, k, l, m, c);
+        ap_uint<1> expected = !(a & b);
+        std::cout << "a=" << a << " b=" << b << " c=" << c << "\n";
+        if (c != expected) {
+            status = 1;
+        }
+    }
+    if (status == 0) {
+        std::cout << "Passed \n";
+    } 
+    else {
+        std::cout << "Failed \n";
+    }
+    return status;
+}
