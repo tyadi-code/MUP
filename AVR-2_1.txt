@@ -1,0 +1,21 @@
+LDI R16, 0x01;
+OUT 0x17, R16;
+on_loop:
+COM R16
+OUT 0x18, R16
+delay_500ms:
+    LDI R18, 255
+delay_outer:
+    LDI R19, 255
+delay_inner:
+NOP
+NOP
+NOP
+NOP
+NOP
+NOP
+DEC R19
+BRNE delay_inner
+DEC R18;
+BRNE delay_outer
+RJMP on_loop
